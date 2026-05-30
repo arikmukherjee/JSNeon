@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSNeon — JavaScript Compiler IDE</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- CodeMirror core -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/nord.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/autorefresh.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+  <link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Find & Replace Bar -->
+  <div id="find-bar" class="find-bar" hidden>
+    <div class="find-row">
+      <span class="find-label">FIND</span>
+      <input id="find-input" class="find-input" placeholder="Search…" spellcheck="false" />
+      <span id="find-count" class="find-count"></span>
+      <button class="find-btn" id="find-prev" title="Previous (Shift+Enter)">↑</button>
+      <button class="find-btn" id="find-next" title="Next (Enter)">↓</button>
+    </div>
+    <div class="find-row">
+      <span class="find-label">REPL</span>
+      <input id="replace-input" class="find-input" placeholder="Replace with…" spellcheck="false" />
+      <button class="find-btn replace-btn" id="replace-one">Replace</button>
+      <button class="find-btn replace-btn" id="replace-all">All</button>
+      <button class="find-btn find-close" id="find-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="logo">
+        <span class="logo-bracket">{</span>
+        <span class="logo-text">JSNeon</span>
+        <span class="logo-bracket">}</span>
+      </div>
+      <span class="nav-subtitle">JavaScript IDE</span>
+    </div>
+
+    <div class="nav-center">
+      <div class="lang-selector">
+        <span class="lang-dot"></span>
+        <select id="lang-select" title="Mode">
+          <option value="es2024">ES2024</option>
+          <option value="strict">Strict Mode</option>
+          <option value="module">ES Module</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <!-- Font size -->
+      <div class="font-size-ctrl" title="Font Size">
+        <button class="fs-btn" id="fs-down">A-</button>
+        <span id="fs-label">14px</span>
+        <button class="fs-btn" id="fs-up">A+</button>
+      </div>
+
+      <!-- Editor theme -->
+      <select id="editor-theme" class="theme-select" title="Editor Theme">
+        <option value="dracula">Dracula</option>
+        <option value="monokai">Monokai</option>
+        <option value="material-darker">Material</option>
+        <option value="nord">Nord</option>
+        <option value="default">Light</option>
+      </select>
+
+      <button class="nav-btn" id="find-open-btn" title="Find & Replace (Ctrl+F)">
+        <span class="btn-icon">⌕</span>
+        <span class="btn-label">Find</span>
+      </button>
+      <button class="nav-btn" id="snippets-btn" title="Code Snippets">
+        <span class="btn-icon">⚡</span>
+        <span class="btn-label">Snippets</span>
+      </button>
+      <button class="nav-btn" id="shortcuts-btn" title="Keyboard Shortcuts">
+        <span class="btn-icon">⌨</span>
+        <span class="btn-label">Keys</span>
+      </button>
+      <button class="nav-btn" id="theme-toggle" title="Toggle UI Theme">
+        <span class="btn-icon">◑</span>
+        <span class="btn-label">Theme</span>
+      </button>
+      <button class="nav-btn" id="history-btn" title="Execution History">
+        <span class="btn-icon">⏱</span>
+        <span class="btn-label">History</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Layout -->
+  <main class="ide-container">
+
+    <!-- ── EDITOR PANEL ── -->
+    <section class="panel editor-panel" id="editor-panel">
+
+      <!-- Multi-file tab bar -->
+      <div class="tab-bar" id="tab-bar">
+        <div class="tabs-scroll" id="tabs-list"></div>
+        <button class="tab-add-btn" id="tab-add-btn" title="New File">＋</button>
+      </div>
+
+      <!-- Editor meta bar -->
+      <div class="panel-meta-bar">
+        <span id="line-count">1 line</span>
+        <span class="meta-sep">·</span>
+        <span id="word-count">0 words</span>
+        <span class="meta-sep">·</span>
+        <span id="char-count">0 chars</span>
+        <span class="meta-sep">·</span>
+        <span id="cursor-pos">Ln 1, Col 1</span>
+        <span class="meta-sep">·</span>
+        <span id="sel-count" class="sel-info"></span>
+      </div>
+
+      <div class="editor-wrap">
+        <textarea id="code-editor"></textarea>
+      </div>
+
+      <div class="panel-toolbar">
+        <button class="tool-btn run-btn" id="run-btn" title="Run (Ctrl+Enter)">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Run Code <kbd>Ctrl+↵</kbd>
+        </button>
+        <button class="tool-btn" id="format-btn" title="Format Code (Ctrl+Shift+F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg>
+          Format
+        </button>
+        <button class="tool-btn" id="clear-editor-btn" title="Clear Editor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          Clear
+        </button>
+        <button class="tool-btn" id="copy-btn" title="Copy Code (Ctrl+Shift+C)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy
+        </button>
+        <button class="tool-btn" id="download-btn" title="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download
+        </button>
+      </div>
+    </section>
+
+    <!-- Resizer -->
+    <div class="resizer" id="resizer" title="Drag to resize">
+      <div class="resizer-handle"></div>
+    </div>
+
+    <!-- ── OUTPUT PANEL ── -->
+    <section class="panel output-panel" id="output-panel">
+      <div class="panel-header">
+        <div class="panel-tabs">
+          <button class="tab active output-tab" data-filter="all">
+            <span class="tab-dot output-dot"></span>console
+          </button>
+          <button class="output-tab filter-tab" data-filter="out-error">
+            <span class="filter-dot err-dot"></span>errors
+          </button>
+          <button class="output-tab filter-tab" data-filter="out-warn">
+            <span class="filter-dot warn-dot"></span>warnings
+          </button>
+        </div>
+        <div class="panel-actions">
+          <label class="scroll-lock-label" title="Scroll Lock">
+            <input type="checkbox" id="scroll-lock" />
+            <span>scroll lock</span>
+          </label>
+          <button class="icon-btn" id="clear-output-btn">✕ clear</button>
+        </div>
+      </div>
+
+      <div class="output-wrap" id="output-wrap">
+        <div class="output-console" id="output-console">
+          <div class="console-welcome">
+            <span class="prompt-line">JSNeon IDE v2.0 — JavaScript Runtime</span>
+            <span class="prompt-line dim">Press <strong>Run Code</strong> or <strong>Ctrl+Enter</strong> to execute.</span>
+            <span class="prompt-line dim">console.log · warn · error · info · table · time · count · group</span>
+            <span class="prompt-line dim">─────────────────────────────────────────────────────</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Console input (REPL) -->
+      <div class="repl-bar">
+        <span class="repl-prompt">&gt;_</span>
+        <input id="repl-input" class="repl-input" placeholder="Quick eval… (Enter to run)" spellcheck="false" autocomplete="off" />
+        <button class="repl-run-btn" id="repl-run">⏎</button>
+      </div>
+
+      <div class="output-footer">
+        <div class="footer-left">
+          <span id="exec-status" class="status-idle">● IDLE</span>
+          <span id="exec-time" class="exec-time"></span>
+        </div>
+        <div class="footer-right">
+          <span id="log-count" class="log-count"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── SNIPPETS MODAL ── -->
+  <div class="modal-overlay" id="snippets-modal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <span>⚡ Code Snippets</span>
+        <input id="snippet-search" class="snippet-search" placeholder="Search snippets…" />
+        <button class="modal-close" id="close-snippets">✕</button>
+      </div>
+      <div class="snippets-grid" id="snippets-grid"></div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY MODAL ── -->
+  <div class="modal-overlay" id="history-modal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <span>⏱ Execution History</span>
+        <button class="modal-close" id="close-history">✕</button>
+      </div>
+      <div class="modal-body" id="history-list"></div>
+      <div class="modal-footer">
+        <button class="tool-btn" id="clear-history-btn">Clear History</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SHORTCUTS MODAL ── -->
+  <div class="modal-overlay" id="shortcuts-modal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <span>⌨ Keyboard Shortcuts</span>
+        <button class="modal-close" id="close-shortcuts">✕</button>
+      </div>
+      <div class="modal-body shortcuts-body" id="shortcuts-body"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Built with <span class="heart">♥</span> using HTML, CSS &amp; JavaScript
+    &nbsp;·&nbsp; JSNeon IDE v2.0 &nbsp;·&nbsp; <span id="footer-year"></span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
